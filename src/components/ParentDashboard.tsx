@@ -171,8 +171,17 @@ export function ParentDashboard() {
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
                 <div className="divide-y divide-stone-100">
-                  {chores.map(chore => {
-                    const assignedChild = children.find(c => c.id === chore.assignedTo);
+                  {chores.length === 0 ? (
+                    <div className="p-12 text-center flex flex-col items-center">
+                      <div className="w-16 h-16 bg-stone-50 border-2 border-dashed border-stone-200 rounded-full flex items-center justify-center text-stone-400 mb-4">
+                        <Plus size={32} />
+                      </div>
+                      <p className="text-lg font-bold text-stone-800">No quests yet!</p>
+                      <p className="text-stone-500 mt-1 max-w-sm">Click 'Add Chore' above to create your first family quest and start earning points.</p>
+                    </div>
+                  ) : (
+                    chores.map(chore => {
+                      const assignedChild = children.find(c => c.id === chore.assignedTo);
                     return (
                       <div key={chore.id} className="p-4 flex items-center justify-between hover:bg-stone-50 transition-colors">
                         <div className="flex items-center gap-4">
@@ -198,7 +207,8 @@ export function ParentDashboard() {
                         </div>
                       </div>
                     );
-                  })}
+                  })
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>
@@ -207,27 +217,42 @@ export function ParentDashboard() {
 
         <TabsContent value="rewards" className="mt-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {rewards.map(reward => (
-              <Card key={reward.id} className="border-stone-200 shadow-sm">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-stone-800">{reward.title}</p>
-                    <p className="text-xs text-orange-600 font-bold">{reward.cost} Points</p>
-                    {reward.assignedTo && (
-                      <p className="text-[10px] text-stone-500 mt-1 uppercase font-bold tracking-wider">
-                        Assigned to {children.find(c => c.id === reward.assignedTo)?.name || 'Unknown'}
+            {rewards.length === 0 ? (
+              <div className="col-span-1 sm:col-span-2 p-12 text-center flex flex-col items-center bg-white border border-stone-200 rounded-xl shadow-sm">
+                <p className="text-lg font-bold text-stone-800">No rewards yet!</p>
+                <p className="text-stone-500 mt-1 max-w-sm">Click 'Add Reward' to stock the Treasure Shop.</p>
+              </div>
+            ) : (
+              rewards.map(reward => (
+                <Card key={reward.id} className={`border-stone-200 shadow-sm ${reward.isClaimed ? 'opacity-75 bg-stone-50' : ''}`}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-stone-800 flex items-center gap-2">
+                        {reward.title}
+                        {reward.isClaimed && <Badge variant="secondary" className="bg-stone-200 text-stone-600 text-[10px] leading-none py-1">Claimed</Badge>}
                       </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <EditRewardDialog reward={reward} onEdit={updateReward} children={children} />
-                    <Button variant="ghost" size="icon" onClick={() => deleteReward(reward.id)} className="text-stone-400 hover:text-red-500 transition-colors">
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <p className="text-xs text-orange-600 font-bold">{reward.cost} Points</p>
+                      {reward.assignedTo && (
+                        <p className="text-[10px] text-stone-500 mt-1 uppercase font-bold tracking-wider">
+                          Assigned to {children.find(c => c.id === reward.assignedTo)?.name || 'Unknown'}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {reward.isClaimed && (
+                        <Button variant="outline" size="sm" onClick={() => updateReward(reward.id, { isClaimed: false })} className="text-orange-600 border-orange-200 hover:bg-orange-50 font-bold h-8 text-xs px-3">
+                          Restock
+                        </Button>
+                      )}
+                      <EditRewardDialog reward={reward} onEdit={updateReward} children={children} />
+                      <Button variant="ghost" size="icon" onClick={() => deleteReward(reward.id)} className="text-stone-400 hover:text-red-500 transition-colors h-8 w-8">
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

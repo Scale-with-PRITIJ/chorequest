@@ -20,15 +20,42 @@ interface ChildDashboardProps {
 export function ChildDashboard({ user }: ChildDashboardProps) {
   const { chores, rewards, completeChore, claimReward, updateUser } = useFamily();
   const [activeTab, setActiveTab] = useState('chores');
+  const [error, setError] = useState<string | null>(null);
+  const [loadingTasks, setLoadingTasks] = useState<Record<string, boolean>>({});
 
-  const handleComplete = (choreId: string) => {
-    completeChore(choreId, user.id);
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#f97316', '#fbbf24', '#22c55e']
-    });
+  const handleComplete = async (choreId: string) => {
+    try {
+      setError(null);
+      setLoadingTasks(prev => ({ ...prev, [choreId]: true }));
+      await completeChore(choreId, user.id);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#f97316', '#fbbf24', '#22c55e']
+      });
+    } catch (err) {
+      console.error('Failed to complete chore:', err);
+      setError('Oops! Something went wrong completing that chore.');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setLoadingTasks(prev => ({ ...prev, [choreId]: false }));
+    }
+  };
+
+  const handleClaim = async (rewardId: string) => {
+    try {
+      setError(null);
+      setLoadingTasks(prev => ({ ...prev, [rewardId]: true }));
+      await claimReward(rewardId, user.id);
+      // Optional: Add a different confetti or success feedback here
+    } catch (err) {
+      console.error('Failed to claim reward:', err);
+      setError('Oops! Something went wrong claiming that reward.');
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setLoadingTasks(prev => ({ ...prev, [rewardId]: false }));
+    }
   };
 
   const userChores = chores.filter(c => c.assignedTo === user.id);
@@ -45,6 +72,18 @@ export function ChildDashboard({ user }: ChildDashboardProps) {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          exit={{ opacity: 0, y: -10 }}
+          className="bg-red-50 text-red-600 p-3 rounded-xl border border-red-200 text-sm font-medium flex items-center gap-2 shadow-sm"
+        >
+          <Zap size={16} />
+          {error}
+        </motion.div>
+      )}
+
       {/* Stats Header */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-orange-400 to-orange-600 text-white border-none shadow-lg overflow-hidden relative">
@@ -158,15 +197,16 @@ export function ChildDashboard({ user }: ChildDashboardProps) {
                             <p className="text-sm font-black text-orange-600">+{chore.points}</p>
                             <p className="text-[10px] text-stone-400 uppercase font-bold">Points</p>
                           </div>
-                          {!isDone && (
-                            <Button 
-                              size="sm" 
-                              className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4 shadow-md shadow-orange-100"
-                              onClick={() => handleComplete(chore.id)}
-                            >
-                              Done!
-                            </Button>
-                          )}
+                            {!isDone && (
+                              <Button 
+                                size="sm" 
+                                className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-4 shadow-md shadow-orange-100"
+                                onClick={() => handleComplete(chore.id)}
+                                disabled={loadingTasks[chore.id]}
+                              >
+                                {loadingTasks[chore.id] ? 'Saving...' : 'Done!'}
+                              </Button>
+                            )}
                         </div>
                       </CardContent>
                     </Card>
@@ -220,8 +260,9 @@ export function ChildDashboard({ user }: ChildDashboardProps) {
                                 variant="outline"
                                 className="border-orange-200 text-orange-600 hover:bg-orange-50 rounded-full px-4"
                                 onClick={() => handleComplete(chore.id)}
+                                disabled={loadingTasks[chore.id]}
                               >
-                                Done!
+                                {loadingTasks[chore.id] ? 'Saving...' : 'Done!'}
                               </Button>
                             )}
                           </div>
@@ -242,7 +283,7 @@ export function ChildDashboard({ user }: ChildDashboardProps) {
               Real World Rewards
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {rewards.map(reward => {
+              {rewards.filter(r => !r.assignedTo || r.assignedTo === user.id).map(reward => {
                 const canAfford = user.points >= reward.cost;
                 return (
                   <Card key={reward.id} className={`border-none shadow-sm overflow-hidden ${reward.isClaimed ? 'opacity-50 grayscale' : ''}`}>
@@ -262,12 +303,22 @@ export function ChildDashboard({ user }: ChildDashboardProps) {
                       </div>
                       
                       <Button 
-                        className="w-full rounded-xl font-bold bg-orange-500 hover:bg-orange-600 text-white"
+                        className="w-full rounded-xl font-bold bg-orange-500 hover:bg-orange-600 text-white transition-all"
                         variant={canAfford && !reward.isClaimed ? 'default' : 'secondary'}
-                        disabled={!canAfford || reward.isClaimed}
-                        onClick={() => claimReward(reward.id, user.id)}
+                        disabled={!canAfford || reward.isClaimed || loadingTasks[reward.id]}
+                        onClick={() => handleClaim(reward.id)}
                       >
-                        {reward.isClaimed ? 'Claimed!' : canAfford ? 'Claim Treasure!' : `Need ${reward.cost - user.points} more`}
+                        {loadingTasks[reward.id] ? (
+                          <span className="flex items-center gap-2">
+                            <Zap size={16} className="animate-pulse" /> Processing...
+                          </span>
+                        ) : reward.isClaimed ? (
+                          'Claimed!'
+                        ) : canAfford ? (
+                          'Claim Treasure!'
+                        ) : (
+                          `Need ${reward.cost - user.points} more`
+                        )}
                       </Button>
                     </CardContent>
                   </Card>

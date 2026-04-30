@@ -151,23 +151,6 @@ export function ProfileSwitcher({ onSelect }: ProfileSwitcherProps) {
         ))}
       </div>
 
-      <div className="pt-12 text-center">
-        <Button 
-          variant="ghost" 
-          className="text-stone-400 hover:text-stone-600"
-          onClick={async () => {
-            try {
-              localStorage.removeItem('chorequest_user');
-              await signOut(auth);
-            } catch (err) {
-              console.error('Error during logout', err);
-              await signOut(auth);
-            }
-          }}
-        >
-          Sign out of Family Account
-        </Button>
-      </div>
 
       {/* PIN Entry Dialog */}
       <Dialog open={!!selectedParent} onOpenChange={(open) => !open && setSelectedParent(null)}>
