@@ -189,7 +189,7 @@ export function ChildDashboard({ user }: ChildDashboardProps) {
                           </div>
                           <div>
                             <p className={`font-bold ${isDone ? 'text-green-700 line-through' : 'text-stone-800'}`}>{chore.title}</p>
-                            <p className="text-xs text-stone-500">{chore.description}</p>
+                            {chore.description && <p className="text-xs text-stone-500">{chore.description}</p>}
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -246,7 +246,7 @@ export function ChildDashboard({ user }: ChildDashboardProps) {
                             </div>
                             <div>
                               <p className={`font-bold ${isDone ? 'text-green-700 line-through' : 'text-stone-800'}`}>{chore.title}</p>
-                              <p className="text-xs text-stone-500">{chore.description}</p>
+                              {chore.description && <p className="text-xs text-stone-500">{chore.description}</p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-3">

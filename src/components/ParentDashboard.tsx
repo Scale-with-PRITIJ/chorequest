@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { storageService } from '../services/storageService';
+import { getAvatarUrl } from '../lib/avatar';
 import { useFamily } from '../lib/FamilyContext';
 import { Chore, Reward, User } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
@@ -9,9 +10,10 @@ import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from './ui/dialog';
 import { ScrollArea } from './ui/scroll-area';
-import { Plus, Trash2, Edit2, Users, CheckCircle, BarChart3, Settings, Mail, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, Users, CheckCircle, BarChart3, Settings, Mail, ChevronDown, Sparkles } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
+import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 
 const CHORE_CATALOG = [
   { title: 'Make Bed', icon: '🛏️' },
@@ -55,45 +57,89 @@ export function ParentDashboard() {
 
         <TabsContent value="overview" className="mt-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {children.map(child => {
-              const childChores = chores.filter(c => c.assignedTo === child.id);
-                const today = new Date().toLocaleDateString('en-CA');
-                const completedToday = childChores.filter(c => c.completedDates.includes(today)).length;
-              
-              return (
-                <Card key={child.id} className="border-stone-200 shadow-sm">
-                  <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={child.avatar} />
-                      <AvatarFallback>{child.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{child.name}</CardTitle>
-                      <CardDescription>Level {child.level} • {child.points} Points</CardDescription>
-                    </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-700">
-                      {completedToday}/{childChores.filter(c => c.frequency === 'daily').length} Today
-                    </Badge>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Recent Activity</p>
-                        <div className="space-y-1">
-                          {childChores.slice(0, 3).map(c => (
-                            <div key={c.id} className="flex items-center justify-between text-sm py-1 border-b border-stone-50 last:border-0">
-                              <span className="text-stone-700">{c.title}</span>
-                              <span className="text-stone-400 text-xs">{c.completedDates.length} total completions</span>
-                            </div>
-                          ))}
-                        </div>
+            {children.length > 0 ? (
+              children.map(child => {
+                const childChores = chores.filter(c => c.assignedTo === child.id);
+                  const today = new Date().toLocaleDateString('en-CA');
+                  
+                  const now = new Date();
+                  const day = now.getDay();
+                  const diff = now.getDate() - day + (day === 0 ? -6 : 1); 
+                  const monday = new Date(now.setDate(diff));
+                  monday.setHours(0, 0, 0, 0);
+                  const startOfWeekStr = monday.toISOString().split('T')[0];
+
+                  const dailyTotal = childChores.filter(c => c.frequency === 'daily').length;
+                  const weeklyTotal = childChores.filter(c => c.frequency === 'weekly').length;
+
+                  const completedToday = childChores.filter(c => c.frequency === 'daily' && c.completedDates.includes(today)).length;
+                  const completedWeekly = childChores.filter(c => c.frequency === 'weekly' && c.completedDates.some(d => d >= startOfWeekStr)).length;
+                
+                return (
+                  <Card key={child.id} className="border-stone-200 shadow-sm">
+                    <CardHeader className="flex flex-row items-center gap-4 pb-2">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={child.avatar || getAvatarUrl(child.name, child.role, child.gender)} />
+                        <AvatarFallback>{child.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">{child.name}</CardTitle>
+                        <CardDescription>Level {child.level} • {child.points} Points</CardDescription>
                       </div>
-                      <ChildReportDialog child={child} chores={chores} />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      <div className="flex gap-2 flex-wrap justify-end">
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 whitespace-nowrap">
+                          {completedToday}/{dailyTotal} Daily
+                        </Badge>
+                        {weeklyTotal > 0 && (
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 whitespace-nowrap">
+                            {completedWeekly}/{weeklyTotal} Weekly
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Recent Activity</p>
+                          <div className="space-y-1">
+                            {childChores.slice(0, 3).map(c => (
+                              <div key={c.id} className="flex items-center justify-between text-sm py-1 border-b border-stone-50 last:border-0">
+                                <span className="text-stone-700">{c.title}</span>
+                                <span className="text-stone-400 text-xs">{c.completedDates.length} total completions</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <ChildReportDialog child={child} chores={chores} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            ) : (
+              <Card className="col-span-full border-2 border-dashed border-stone-200 bg-stone-50/50">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                  <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-2">
+                    <Sparkles size={32} />
+                  </div>
+                  <div className="space-y-2 max-w-sm">
+                    <CardTitle className="text-xl">Your family quest begins here!</CardTitle>
+                    <p className="text-stone-500 text-sm">
+                      Add your kids to start their adventure, or invite a partner to help manage the family's chores and rewards.
+                    </p>
+                  </div>
+                  <AddUserDialog 
+                    onAdd={addUser} 
+                    parentId={currentUser?.id} 
+                    trigger={
+                      <Button className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl px-8 py-6">
+                        <Plus className="mr-2" /> Add Your First Member
+                      </Button>
+                    }
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {pets.length > 0 && (
@@ -104,7 +150,7 @@ export function ParentDashboard() {
                   <Card key={pet.id} className="border-stone-200 shadow-sm">
                     <CardHeader className="flex flex-row items-center gap-4">
                       <Avatar className="w-12 h-12">
-                        <AvatarImage src={pet.avatar} />
+                        <AvatarImage src={pet.avatar || getAvatarUrl(pet.name, pet.role, 'other')} />
                         <AvatarFallback>{pet.name[0]}</AvatarFallback>
                       </Avatar>
                       <div>
@@ -201,9 +247,11 @@ export function ParentDashboard() {
                         </div>
                         <div className="flex gap-2">
                           <EditChoreDialog chore={chore} onEdit={updateChore} children={children} />
-                          <Button variant="ghost" size="icon" onClick={() => deleteChore(chore.id)} className="text-stone-400 hover:text-red-500 transition-colors">
-                            <Trash2 size={16} />
-                          </Button>
+                          <ConfirmDeleteDialog onConfirm={() => deleteChore(chore.id)} title="Delete Chore" description={`Are you sure you want to delete "${chore.title}"?`}>
+                            <Button variant="ghost" size="icon" className="text-stone-400 hover:text-red-500 transition-colors">
+                              <Trash2 size={16} />
+                            </Button>
+                          </ConfirmDeleteDialog>
                         </div>
                       </div>
                     );
@@ -245,9 +293,11 @@ export function ParentDashboard() {
                         </Button>
                       )}
                       <EditRewardDialog reward={reward} onEdit={updateReward} children={children} />
-                      <Button variant="ghost" size="icon" onClick={() => deleteReward(reward.id)} className="text-stone-400 hover:text-red-500 transition-colors h-8 w-8">
-                        <Trash2 size={16} />
-                      </Button>
+                      <ConfirmDeleteDialog onConfirm={() => deleteReward(reward.id)} title="Delete Reward" description={`Are you sure you want to delete "${reward.title}"?`}>
+                        <Button variant="ghost" size="icon" className="text-stone-400 hover:text-red-500 transition-colors h-8 w-8">
+                          <Trash2 size={16} />
+                        </Button>
+                      </ConfirmDeleteDialog>
                     </div>
                   </CardContent>
                 </Card>
@@ -459,10 +509,11 @@ function AddRewardDialog({ onAdd, children }: { onAdd: any, children: User[] }) 
   );
 }
 
-function AddUserDialog({ onAdd, parentId }: { onAdd: any, parentId?: string }) {
+function AddUserDialog({ onAdd, parentId, trigger }: { onAdd: any, parentId?: string, trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState<'child' | 'pet'>('child');
+  const [gender, setGender] = useState('other');
   const [petSpecies, setPetSpecies] = useState('');
   
   // Virtual Pet states for Child
@@ -476,10 +527,8 @@ function AddUserDialog({ onAdd, parentId }: { onAdd: any, parentId?: string }) {
       parentId: (role === 'child' || role === 'pet') ? parentId : undefined,
       points: 0,
       level: 1,
-      gender: 'other',
-      avatar: role === 'pet' 
-        ? `https://api.dicebear.com/7.x/bottts/svg?seed=${name}` 
-        : `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
+      gender,
+      avatar: getAvatarUrl(name, role, gender),
       pet: role === 'pet' 
         ? { type: petSpecies, name: name, stage: 1, accessories: [] } 
         : role === 'child' 
@@ -488,6 +537,7 @@ function AddUserDialog({ onAdd, parentId }: { onAdd: any, parentId?: string }) {
     });
     setOpen(false);
     setName('');
+    setGender('other');
     setPetSpecies('');
     setVirtualPetType('Dog');
     setVirtualPetName('Buddy');
@@ -496,9 +546,11 @@ function AddUserDialog({ onAdd, parentId }: { onAdd: any, parentId?: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-stone-100 text-stone-600 rounded-xl hover:bg-stone-200 border-none">
-          <Users size={18} className="mr-2" /> Add Member
-        </Button>
+        {trigger || (
+          <Button variant="outline" className="bg-stone-100 text-stone-600 rounded-xl hover:bg-stone-200 border-none">
+            <Users size={18} className="mr-2" /> Add Member
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -509,6 +561,21 @@ function AddUserDialog({ onAdd, parentId }: { onAdd: any, parentId?: string }) {
             <Label htmlFor="name">{role === 'pet' ? 'Pet Name' : 'Name'}</Label>
             <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder={role === 'pet' ? 'e.g. Bella' : 'e.g. Leo'} />
           </div>
+          {role !== 'pet' && (
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gender (for Avatar)</Label>
+              <select 
+                id="gender" 
+                className="w-full h-10 px-3 rounded-md border border-stone-200 bg-white text-sm"
+                value={gender}
+                onChange={e => setGender(e.target.value)}
+              >
+                <option value="other">Surprise Me</option>
+                <option value="male">Boy / Male</option>
+                <option value="female">Girl / Female</option>
+              </select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>Role</Label>
             <div className="flex gap-4">

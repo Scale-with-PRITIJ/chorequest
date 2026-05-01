@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 import { useFamily } from '../lib/FamilyContext';
 import { auth, signOut } from '../lib/firebase';
@@ -9,6 +9,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { hashPin } from '../lib/hash';
+import { getAvatarUrl } from '../lib/avatar';
 
 interface ProfileSwitcherProps {
   onSelect: (user: User) => void;
@@ -16,36 +18,49 @@ interface ProfileSwitcherProps {
 
 export function ProfileSwitcher({ onSelect }: ProfileSwitcherProps) {
   const { users, addUser, updateUser } = useFamily();
-  const [setupName, setSetupName] = useState('');
-  const [setupPin, setSetupPin] = useState('');
+
 
   // PIN entry states
   const [selectedParent, setSelectedParent] = useState<User | null>(null);
   const [pinEntry, setPinEntry] = useState('');
   const [pinError, setPinError] = useState(false);
 
+
   const handleProfileClick = (user: User) => {
     if (user.role === 'parent') {
       setSelectedParent(user);
       setPinEntry('');
+      setPinError(false);
       setPinError(false);
     } else {
       onSelect(user);
     }
   };
 
-  const handlePinSubmit = () => {
+
+
+  const handlePinSubmit = async () => {
     if (!selectedParent) return;
     
     // If parent doesn't have a PIN, set this as their new PIN
     if (!selectedParent.pin) {
-      updateUser({ ...selectedParent, pin: pinEntry });
+      const hashedPin = await hashPin(pinEntry);
+      updateUser({ ...selectedParent, pin: hashedPin });
       onSelect(selectedParent);
       setSelectedParent(null);
       return;
     }
 
-    if (pinEntry === selectedParent.pin) {
+    const isHashed = selectedParent.pin.length === 64;
+    const isValid = isHashed 
+      ? await hashPin(pinEntry) === selectedParent.pin 
+      : pinEntry === selectedParent.pin;
+
+    if (isValid) {
+      // Auto-upgrade plain-text PIN to hashed PIN on successful login
+      if (!isHashed) {
+        updateUser({ ...selectedParent, pin: await hashPin(pinEntry) });
+      }
       onSelect(selectedParent);
       setSelectedParent(null);
     } else {
@@ -54,57 +69,7 @@ export function ProfileSwitcher({ onSelect }: ProfileSwitcherProps) {
     }
   };
 
-  if (users.length === 0) {
-    return (
-      <div className="text-center space-y-8 w-full max-w-md mx-auto">
-        <div className="space-y-2">
-          <h2 className="text-3xl font-bold text-stone-900">Welcome to ChoreQuest!</h2>
-          <p className="text-stone-500">Your family database is currently empty. Let's create the first Parent profile to get started.</p>
-        </div>
-        <Card className="border-none shadow-xl">
-          <CardContent className="p-6 space-y-4">
-            <div className="space-y-2 text-left">
-              <Label htmlFor="parent-name">Your Name (Parent)</Label>
-              <Input 
-                id="parent-name" 
-                value={setupName} 
-                onChange={e => setSetupName(e.target.value)} 
-                placeholder="e.g. Mom, Dad, or your first name" 
-              />
-            </div>
-            <div className="space-y-2 text-left">
-              <Label htmlFor="parent-pin">Create 4-Digit PIN</Label>
-              <Input 
-                id="parent-pin" 
-                type="password"
-                maxLength={4}
-                value={setupPin} 
-                onChange={e => setSetupPin(e.target.value.replace(/\D/g, ''))} 
-                placeholder="e.g. 1234" 
-              />
-            </div>
-            <Button 
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-              disabled={!setupName.trim() || setupPin.length < 4}
-              onClick={() => {
-                addUser({
-                  name: setupName,
-                  role: 'parent',
-                  points: 0,
-                  level: 1,
-                  gender: 'other',
-                  avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${setupName}`,
-                  pin: setupPin
-                });
-              }}
-            >
-              Create Parent Profile
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
 
   return (
     <div className="text-center space-y-8 w-full max-w-2xl">
@@ -128,7 +93,7 @@ export function ProfileSwitcher({ onSelect }: ProfileSwitcherProps) {
               <CardContent className="p-6 flex flex-col items-center gap-4">
                 <div className="relative">
                   <Avatar className="w-24 h-24 border-4 border-white shadow-lg group-hover:scale-110 transition-transform">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={user.avatar || getAvatarUrl(user.name, user.role, user.gender)} />
                     <AvatarFallback>{user.name[0]}</AvatarFallback>
                   </Avatar>
                   {user.role === 'parent' && (
@@ -155,48 +120,50 @@ export function ProfileSwitcher({ onSelect }: ProfileSwitcherProps) {
       {/* PIN Entry Dialog */}
       <Dialog open={!!selectedParent} onOpenChange={(open) => !open && setSelectedParent(null)}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center">
-              {!selectedParent?.pin ? 'Create Parent PIN' : 'Enter Parent PIN'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4 text-center">
-            {!selectedParent?.pin && (
-              <p className="text-sm text-stone-500">
-                You haven't set a PIN yet. Please create a 4-digit PIN to secure your profile.
-              </p>
-            )}
-            {pinError && (
-              <p className="text-sm text-red-500 font-medium">Incorrect PIN. Try again.</p>
-            )}
-            <Input 
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={4}
-              className="text-center text-3xl tracking-widest h-16 max-w-[200px] mx-auto font-bold"
-              value={pinEntry}
-              onChange={(e) => {
-                setPinEntry(e.target.value.replace(/\D/g, ''));
-                setPinError(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && pinEntry.length === 4) {
-                  handlePinSubmit();
-                }
-              }}
-              autoFocus
-            />
-          </div>
-          <DialogFooter className="sm:justify-center">
-            <Button 
-              onClick={handlePinSubmit} 
-              disabled={pinEntry.length < 4}
-              className="bg-orange-500 hover:bg-orange-600 text-white w-full max-w-[200px]"
-            >
-              {!selectedParent?.pin ? 'Set PIN' : 'Enter'}
-            </Button>
-          </DialogFooter>
+          <>
+              <DialogHeader>
+                <DialogTitle className="text-center">
+                  {!selectedParent?.pin ? 'Create Parent PIN' : 'Enter Parent PIN'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4 text-center">
+                {!selectedParent?.pin && (
+                  <p className="text-sm text-stone-500">
+                    You haven't set a PIN yet. Please create a 4-digit PIN to secure your profile.
+                  </p>
+                )}
+                {pinError && (
+                  <p className="text-sm text-red-500 font-medium">Incorrect PIN. Try again.</p>
+                )}
+                <Input 
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  className="text-center text-3xl tracking-widest h-16 max-w-[200px] mx-auto font-bold"
+                  value={pinEntry}
+                  onChange={(e) => {
+                    setPinEntry(e.target.value.replace(/\D/g, ''));
+                    setPinError(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && pinEntry.length === 4) {
+                      handlePinSubmit();
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+              <DialogFooter className="sm:justify-center flex-col sm:flex-col gap-2">
+                <Button 
+                  onClick={handlePinSubmit} 
+                  disabled={pinEntry.length < 4}
+                  className="bg-orange-500 hover:bg-orange-600 text-white w-full max-w-[200px] mx-auto"
+                >
+                  {!selectedParent?.pin ? 'Set PIN' : 'Enter'}
+                </Button>
+              </DialogFooter>
+            </>
         </DialogContent>
       </Dialog>
     </div>

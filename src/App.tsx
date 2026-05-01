@@ -13,7 +13,7 @@ import { LoginRegister } from './components/LoginRegister';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, ChevronDown, RefreshCcw, User as UserIcon } from 'lucide-react';
 
-function AppContent() {
+export function AppContent() {
   const { currentUser, setCurrentUser, isAuthenticated, logout } = useFamily();
   const [showAuth, setShowAuth] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -116,9 +116,14 @@ function AppContent() {
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-stone-800">{currentUser.name}</p>
-                  <p className="text-xs text-stone-500 capitalize">{currentUser.role}</p>
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-bold text-stone-800">{currentUser.name}</p>
+                    <p className="text-xs text-stone-500 capitalize">{currentUser.role}</p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full overflow-hidden border border-stone-200 bg-stone-100">
+                    <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
+                  </div>
                 </div>
                 <button 
                   onClick={() => setCurrentUser(null)}

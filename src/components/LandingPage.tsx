@@ -67,15 +67,14 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             viewport={{ once: true }}
             className="aspect-video bg-stone-900 rounded-3xl overflow-hidden relative shadow-2xl ring-4 ring-white"
           >
-            {/* Using a placeholder open source video for the demo */}
-            <video 
-              className="w-full h-full object-cover" 
-              controls 
-              poster="https://images.unsplash.com/photo-1596464716127-f2a82984de30?auto=format&fit=crop&q=80&w=1200"
-            >
-              <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
-              Your browser does not support HTML video.
-            </video>
+            {/* TODO: Replace this placeholder with a Loom or YouTube embed iframe of your demo walkthrough! */}
+            <div className="w-full h-full bg-stone-800 flex flex-col items-center justify-center text-stone-400 p-8 text-center space-y-4">
+              <Sparkles size={48} className="text-orange-500 opacity-50" />
+              <h4 className="text-2xl font-bold text-white">Your Demo Video Goes Here</h4>
+              <p className="max-w-md text-stone-400">
+                Record a quick 1-minute walkthrough using a free tool like <a href="https://www.loom.com" target="_blank" rel="noreferrer" className="text-orange-400 hover:underline">Loom</a> and embed it right here!
+              </p>
+            </div>
           </motion.div>
         </div>
       </section>

@@ -3,6 +3,7 @@ import { User, Chore, Reward, Badge, AppState, CreateUserPayload } from '../type
 import { storageService } from '../services/storageService';
 import { auth, onAuthStateChanged } from '../lib/firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { getAvatarUrl } from './avatar';
 
 interface FamilyContextType extends AppState {
   firebaseUser: FirebaseUser | null;
@@ -39,6 +40,7 @@ export const FamilyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       if (user) {
+        setLoading(true);
         // Clear stale profile selection if the Firebase user changed
         const lastUid = localStorage.getItem('chorequest_family_uid');
         if (lastUid && lastUid !== user.uid) {
@@ -68,9 +70,11 @@ export const FamilyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           // The email IS the primary key — it always resolves to the same UID.
           if (users.length === 0 && user.email) {
             const signupName = localStorage.getItem('chorequest_signup_name');
+            const signupGender = localStorage.getItem('chorequest_signup_gender') || 'other';
             const displayName = signupName || user.displayName || user.email.split('@')[0];
             if (signupName) {
               localStorage.removeItem('chorequest_signup_name');
+              localStorage.removeItem('chorequest_signup_gender');
             }
 
             // Check if user was invited
@@ -80,7 +84,8 @@ export const FamilyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               await storageService.addUser({
                 name: displayName,
                 role: 'parent',
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`,
+                gender: signupGender,
+                avatar: getAvatarUrl(displayName, 'parent', signupGender),
               });
               
               // Now fetch the shared family data
@@ -94,7 +99,8 @@ export const FamilyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               const newParent = await storageService.addUser({
                 name: displayName,
                 role: 'parent',
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`,
+                gender: signupGender,
+                avatar: getAvatarUrl(displayName, 'parent', signupGender),
               });
               users = [newParent];
             }
@@ -108,7 +114,12 @@ export const FamilyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           
           if (!currentUser) {
             const parents = users.filter((u: User) => u.role === 'parent');
-            if (parents.length === 1) {
+            const isResettingPin = !!localStorage.getItem('chorequest_reset_pin_user_id');
+            const parentHasPin = parents.length > 0 && !!parents[0].pin;
+            
+            // Auto-select the parent ONLY if there's exactly 1 parent, 
+            // they don't have a PIN, and they are NOT currently resetting their PIN.
+            if (parents.length === 1 && !parentHasPin && !isResettingPin) {
               currentUser = parents[0];
               localStorage.setItem('chorequest_user', currentUser!.id);
             }

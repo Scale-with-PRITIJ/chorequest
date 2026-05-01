@@ -13,6 +13,7 @@ interface LoginRegisterProps {
 export function LoginRegister({ onSuccess }: LoginRegisterProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
+  const [gender, setGender] = useState('other');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +30,7 @@ export function LoginRegister({ onSuccess }: LoginRegisterProps) {
       } else {
         if (name.trim()) {
           localStorage.setItem('chorequest_signup_name', name.trim());
+          localStorage.setItem('chorequest_signup_gender', gender);
         }
         await createUserWithEmailAndPassword(auth, email, password);
       }
@@ -64,17 +66,33 @@ export function LoginRegister({ onSuccess }: LoginRegisterProps) {
             )}
             
             {!isLogin && (
-              <div className="space-y-2 text-left">
-                <Label htmlFor="name">Your Name</Label>
-                <Input 
-                  id="name" 
-                  type="text" 
-                  value={name} 
-                  onChange={e => setName(e.target.value)} 
-                  placeholder="e.g. Mom, Dad, or your first name" 
-                  required={!isLogin} 
-                />
-              </div>
+              <>
+                <div className="space-y-2 text-left">
+                  <Label htmlFor="name">Your Name</Label>
+                  <Input 
+                    id="name" 
+                    type="text" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    placeholder="e.g. Mom, Dad, or your first name" 
+                    required={!isLogin} 
+                  />
+                </div>
+
+                <div className="space-y-2 text-left">
+                  <Label htmlFor="gender">Your Gender (for Avatar)</Label>
+                  <select 
+                    id="gender" 
+                    className="w-full h-10 px-3 rounded-md border border-stone-200 bg-white text-sm"
+                    value={gender}
+                    onChange={e => setGender(e.target.value)}
+                  >
+                    <option value="other">Surprise Me</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+              </>
             )}
             
             <div className="space-y-2 text-left">

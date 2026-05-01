@@ -54,6 +54,9 @@ export const updateUser = async (req: Request, res: Response) => {
     if (!familyId) return;
 
     logger.info(`Updating user ID: ${req.params.id}`);
+    if (req.body.pin === '') {
+      logger.info(`PIN reset requested for user ID: ${req.params.id}`);
+    }
     const user = await storageService.updateUser(familyId, req.params.id, req.body);
     if (user) {
       res.json(user);

@@ -6,29 +6,41 @@ import { cn } from "@/lib/utils"
 function Avatar({
   className,
   size = "default",
+  children,
   ...props
-}: AvatarPrimitive.Root.Props & {
+}: React.ComponentProps<"div"> & {
   size?: "default" | "sm" | "lg"
 }) {
   return (
-    <AvatarPrimitive.Root
+    <div
       data-slot="avatar"
       data-size={size}
       className={cn(
-        "group/avatar relative flex size-8 shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten",
+        "relative flex size-8 shrink-0 rounded-full select-none overflow-hidden bg-stone-100 data-[size=lg]:size-12 data-[size=sm]:size-6",
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   )
 }
 
-function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
+function AvatarImage({ className, src, ...props }: React.ComponentProps<"img">) {
+  const [loaded, setLoaded] = React.useState(false)
+  const [hasError, setHasError] = React.useState(false)
+  
+  if (!src || hasError) return null
+
   return (
-    <AvatarPrimitive.Image
+    <img
       data-slot="avatar-image"
+      src={src}
+      onLoad={() => setLoaded(true)}
+      onError={() => setHasError(true)}
       className={cn(
-        "aspect-square size-full rounded-full object-cover",
+        "aspect-square size-full rounded-full object-cover absolute inset-0 z-10 transition-opacity duration-300",
+        loaded ? "opacity-100" : "opacity-0",
         className
       )}
       {...props}
@@ -38,17 +50,20 @@ function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
 
 function AvatarFallback({
   className,
+  children,
   ...props
-}: AvatarPrimitive.Fallback.Props) {
+}: React.ComponentProps<"div">) {
   return (
-    <AvatarPrimitive.Fallback
+    <div
       data-slot="avatar-fallback"
       className={cn(
-        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",
+        "flex size-full items-center justify-center rounded-full bg-stone-100 text-sm font-bold text-stone-500 uppercase tracking-tighter",
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   )
 }
 
