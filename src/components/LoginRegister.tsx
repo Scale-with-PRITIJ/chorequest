@@ -8,9 +8,11 @@ import { Loader2 } from 'lucide-react';
 
 interface LoginRegisterProps {
   onSuccess: () => void;
+  onViewPrivacy: () => void;
+  onViewTerms: () => void;
 }
 
-export function LoginRegister({ onSuccess }: LoginRegisterProps) {
+export function LoginRegister({ onSuccess, onViewPrivacy, onViewTerms }: LoginRegisterProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [gender, setGender] = useState('other');
@@ -140,6 +142,15 @@ export function LoginRegister({ onSuccess }: LoginRegisterProps) {
             >
               {isLogin ? 'Register here' : 'Log in here'}
             </button>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-stone-100 text-center">
+            <p className="text-[11px] text-stone-400 leading-relaxed">
+              By signing in to ChoreQuest, you agree to our{' '}
+              <button onClick={onViewTerms} className="underline hover:text-stone-600 transition-colors">Terms</button>
+              {' '}and{' '}
+              <button onClick={onViewPrivacy} className="underline hover:text-stone-600 transition-colors">Privacy Policy</button>.
+            </p>
           </div>
         </CardContent>
       </Card>

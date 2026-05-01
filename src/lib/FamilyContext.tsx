@@ -70,7 +70,7 @@ export const FamilyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           // The email IS the primary key — it always resolves to the same UID.
           if (users.length === 0 && user.email) {
             const signupName = localStorage.getItem('chorequest_signup_name');
-            const signupGender = localStorage.getItem('chorequest_signup_gender') || 'other';
+            const signupGender = (localStorage.getItem('chorequest_signup_gender') || 'other') as 'male' | 'female' | 'other';
             const displayName = signupName || user.displayName || user.email.split('@')[0];
             if (signupName) {
               localStorage.removeItem('chorequest_signup_name');

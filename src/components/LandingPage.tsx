@@ -7,9 +7,11 @@ import { CheckCircle2, Star, ShieldCheck, Heart, Sparkles, ArrowRight } from 'lu
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onViewPrivacy: () => void;
+  onViewTerms: () => void;
 }
 
-export function LandingPage({ onGetStarted }: LandingPageProps) {
+export function LandingPage({ onGetStarted, onViewPrivacy, onViewTerms }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
       {/* Navigation */}
@@ -202,13 +204,35 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
       </section>
 
       {/* Footer CTA */}
-      <footer className="py-24 px-6 text-center bg-orange-500 text-white">
+      <section className="py-24 px-6 text-center bg-orange-500 text-white">
         <div className="max-w-3xl mx-auto space-y-8">
           <h2 className="text-4xl md:text-5xl font-black">Ready to start your adventure?</h2>
           <p className="text-xl text-orange-100">Join families everywhere who have turned chore time into game time.</p>
           <Button size="lg" className="bg-white text-orange-600 hover:bg-stone-100 font-bold rounded-2xl h-14 px-10 text-lg" onClick={onGetStarted}>
             Create Your Family Profile
           </Button>
+        </div>
+      </section>
+
+      {/* Main Footer */}
+      <footer className="py-12 px-6 bg-stone-900 text-stone-400 border-t border-stone-800">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-stone-800 rounded-lg flex items-center justify-center text-stone-400 font-bold text-sm border border-stone-700">
+              CQ
+            </div>
+            <span className="text-white font-bold tracking-tight">ChoreQuest</span>
+          </div>
+          
+          <div className="flex gap-8 text-sm font-medium">
+            <button onClick={onViewPrivacy} className="hover:text-white transition-colors">Privacy Policy</button>
+            <button onClick={onViewTerms} className="hover:text-white transition-colors">Terms of Service</button>
+            <a href="mailto:chorequest.pro@gmail.com" className="hover:text-white transition-colors">Support</a>
+          </div>
+
+          <div className="text-xs text-stone-500">
+            © 2026 ChoreQuest. All rights reserved.
+          </div>
         </div>
       </footer>
     </div>
