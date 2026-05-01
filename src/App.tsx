@@ -12,11 +12,16 @@ import { LandingPage } from './components/LandingPage';
 import { LoginRegister } from './components/LoginRegister';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, ChevronDown, RefreshCcw, User as UserIcon } from 'lucide-react';
+import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { TermsOfService } from './components/TermsOfService';
+
+type LegalView = 'none' | 'privacy' | 'terms';
 
 export function AppContent() {
   const { currentUser, setCurrentUser, isAuthenticated, logout } = useFamily();
   const [showAuth, setShowAuth] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [legalView, setLegalView] = useState<LegalView>('none');
 
   useEffect(() => {
     fetch('/api/health')
@@ -25,14 +30,34 @@ export function AppContent() {
       .catch(err => console.error('Backend fetch error:', err));
   }, []);
 
+  if (legalView === 'privacy') {
+    return <PrivacyPolicy onBack={() => setLegalView('none')} />;
+  }
+
+  if (legalView === 'terms') {
+    return <TermsOfService onBack={() => setLegalView('none')} />;
+  }
+
   // Not logged in and hasn't clicked "Get Started" → show landing page
   if (!isAuthenticated && !showAuth) {
-    return <LandingPage onGetStarted={() => setShowAuth(true)} />;
+    return (
+      <LandingPage 
+        onGetStarted={() => setShowAuth(true)} 
+        onViewPrivacy={() => setLegalView('privacy')}
+        onViewTerms={() => setLegalView('terms')}
+      />
+    );
   }
 
   // Clicked "Get Started" but not yet authenticated → show login/register
   if (!isAuthenticated && showAuth) {
-    return <LoginRegister onSuccess={() => setShowAuth(false)} />;
+    return (
+      <LoginRegister 
+        onSuccess={() => setShowAuth(false)} 
+        onViewPrivacy={() => setLegalView('privacy')}
+        onViewTerms={() => setLegalView('terms')}
+      />
+    );
   }
 
   // Authenticated but no profile selected → show profile switcher

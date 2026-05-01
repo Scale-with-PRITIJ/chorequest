@@ -46,7 +46,7 @@ describe('Onboarding Flow - Professional Implementation', () => {
 
   describe('Registration Logic', () => {
     it('captures name and gender and saves to localStorage on signup', async () => {
-      render(<LoginRegister onSuccess={() => {}} />);
+      render(<LoginRegister onSuccess={() => {}} onViewPrivacy={() => {}} onViewTerms={() => {}} />);
       
       // Switch to Register
       fireEvent.click(screen.getByText('Register here'));
@@ -71,7 +71,7 @@ describe('Onboarding Flow - Professional Implementation', () => {
     });
 
     it('defaults to other if no gender is explicitly changed', async () => {
-      render(<LoginRegister onSuccess={() => {}} />);
+      render(<LoginRegister onSuccess={() => {}} onViewPrivacy={() => {}} onViewTerms={() => {}} />);
       fireEvent.click(screen.getByText('Register here'));
       fireEvent.change(screen.getByLabelText(/Your Name/i), { target: { value: 'Tester' } });
       fireEvent.click(screen.getByRole('button', { name: /Sign Up/i }));
@@ -141,7 +141,7 @@ describe('Onboarding Flow - Professional Implementation', () => {
 
   describe('Edge Cases', () => {
     it('handles whitespace in names correctly', async () => {
-      render(<LoginRegister onSuccess={() => {}} />);
+      render(<LoginRegister onSuccess={() => {}} onViewPrivacy={() => {}} onViewTerms={() => {}} />);
       fireEvent.click(screen.getByText('Register here'));
       fireEvent.change(screen.getByLabelText(/Your Name/i), { target: { value: '  Leo  ' } });
       fireEvent.click(screen.getByRole('button', { name: /Sign Up/i }));
@@ -152,7 +152,7 @@ describe('Onboarding Flow - Professional Implementation', () => {
     });
 
     it('handles invite scenario correctly (conceptual)', async () => {
-      render(<LoginRegister onSuccess={() => {}} />);
+      render(<LoginRegister onSuccess={() => {}} onViewPrivacy={() => {}} onViewTerms={() => {}} />);
       fireEvent.click(screen.getByText('Register here'));
       fireEvent.change(screen.getByLabelText(/Your Name/i), { target: { value: 'Invited Guest' } });
       fireEvent.click(screen.getByRole('button', { name: /Sign Up/i }));
